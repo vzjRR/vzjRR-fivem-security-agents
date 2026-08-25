@@ -1,0 +1,11 @@
+# Ignore secrets and junk
+vzjRR_AGENT_UNLOCK_KEY.txt
+**/vzjRR_AGENT_UNLOCK_KEY.txt
+*.pem
+.env
+.env.*
+.DS_Store
+Thumbs.db
+_build/
+materialized/
+*.log

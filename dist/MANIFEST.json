@@ -1,0 +1,22 @@
+{
+  "credit": "vzjRR Security Assessment for FiveM",
+  "created_utc": "2026-08-25T20:51:15.364983+00:00",
+  "packages": [
+    {
+      "file": "vzjRR_FiveM_Assessment_Agent.zip",
+      "sha256": "5afc968e82a323afbe23d4e9f334478cfffe64693e6481d6c664bc64be7a22a0"
+    },
+    {
+      "file": "vzjRR_FiveM_Remediation_Agent.zip",
+      "sha256": "19d0f1eb809d5fd0e82a5f4ce5dde84eb4aa761f9f08ca62faf3b99a9a9b8bb4"
+    }
+  ],
+  "unlock_key_file": "vzjRR_AGENT_UNLOCK_KEY.txt",
+  "protection": [
+    "AES/Fernet sealed core payload",
+    "PBKDF2-HMAC-SHA256 480k iterations",
+    "HMAC tamper detection on sealed blob",
+    "Credit watermark in meta + zip comment + reports"
+  ],
+  "limitation": "Nobody can silently edit the sealed core without breaking unlock. Once unlocked/materialized, files on disk can be copied; keep the unlock key private."
+}
