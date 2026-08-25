@@ -14,7 +14,7 @@ Paste **one** of these prompts into Cursor / ChatGPT / Claude / etc.
 
 ```text
 Fetch and follow this agent exactly (read-only). Do not download zip files. Do not remediate yet.
-https://raw.githubusercontent.com/OWNER/REPO/main/agents/assessment/AGENT.md
+https://raw.githubusercontent.com/vzjRR/vzjRR-fivem-security-agents/main/agents/assessment/AGENT.md
 
 Target path: PASTE_YOUR_FIVEM_OR_RESOURCES_PATH_HERE
 ```
@@ -23,7 +23,7 @@ Target path: PASTE_YOUR_FIVEM_OR_RESOURCES_PATH_HERE
 
 ```text
 Fetch and follow this agent exactly. Do not download zip files.
-https://raw.githubusercontent.com/OWNER/REPO/main/agents/remediation/AGENT.md
+https://raw.githubusercontent.com/vzjRR/vzjRR-fivem-security-agents/main/agents/remediation/AGENT.md
 
 Target path: PASTE_YOUR_FIVEM_OR_RESOURCES_PATH_HERE
 Authorized: yes — quarantine, clean manifests, delete confirmed loaders/stubs
@@ -33,16 +33,14 @@ Authorized: yes — quarantine, clean manifests, delete confirmed loaders/stubs
 
 ```text
 1) Fetch and run this assessment agent (read-only):
-https://raw.githubusercontent.com/OWNER/REPO/main/agents/assessment/AGENT.md
+https://raw.githubusercontent.com/vzjRR/vzjRR-fivem-security-agents/main/agents/assessment/AGENT.md
 Target: PASTE_PATH_HERE
 
 2) After the report, if compromised, fetch and run remediation:
-https://raw.githubusercontent.com/OWNER/REPO/main/agents/remediation/AGENT.md
+https://raw.githubusercontent.com/vzjRR/vzjRR-fivem-security-agents/main/agents/remediation/AGENT.md
 Same target. Quarantine before delete. Re-scan after cleanup.
 Credit all output as: vzjRR Security Assessment for FiveM
 ```
-
-> After you push this repo, replace `OWNER/REPO` in the README with your real GitHub path (or open this file and fix the links).
 
 ---
 
