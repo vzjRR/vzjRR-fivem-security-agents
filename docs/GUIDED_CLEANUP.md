@@ -9,6 +9,9 @@ one they added? Was this resource always here?* Getting those wrong either break
 server or leaves the backdoor. A human answering them, with an analyst reading the
 evidence, is why this path is slower and more reliable.
 
+**The literal commands for every round are in [`RUNBOOK.md`](RUNBOOK.md).** This file explains
+the shape of the process; the runbook is what you follow at the keyboard.
+
 **The loop:** run a read-only command → send the output → receive exact, file-by-file
 instructions → execute → re-verify. Nothing is deleted on a guess, and everything is
 quarantined before it is removed.

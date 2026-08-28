@@ -12,7 +12,8 @@ family and similar server-lock backdoors.
 
 If your players are seeing **"Server is locked by: blum-panel.me"**, start here:
 
-### → [`docs/BLUM_PANEL_PLAYBOOK.md`](docs/BLUM_PANEL_PLAYBOOK.md)
+### → [`docs/BLUM_PANEL_PLAYBOOK.md`](docs/BLUM_PANEL_PLAYBOOK.md) — what happened and what it means
+### → [`docs/RUNBOOK.md`](docs/RUNBOOK.md) — the step-by-step cleanup, command by command
 
 Two things worth knowing before you do anything else:
 
@@ -121,6 +122,7 @@ rather than `main`, and read the file before running it. See finding R-2 in
 
 | Document | Contents |
 |---|---|
+| [`docs/RUNBOOK.md`](docs/RUNBOOK.md) | **Step-by-step cleanup runbook** — every command, every click-path, Round 0 through Round 7 |
 | [`docs/BLUM_PANEL_PLAYBOOK.md`](docs/BLUM_PANEL_PLAYBOOK.md) | Incident playbook for the `blum-panel.me` lock, including the second-infection case |
 | [`docs/CREDENTIAL_ROTATION.md`](docs/CREDENTIAL_ROTATION.md) | The mandatory 14-item rotation, in the order that matters |
 | [`docs/REBUILD_VS_CLEAN.md`](docs/REBUILD_VS_CLEAN.md) | When cleaning cannot restore trust, and how to rebuild without carrying the infection over |
