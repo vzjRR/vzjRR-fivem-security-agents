@@ -1,0 +1,8 @@
+vzjRR Security Assessment for FiveM - toolkit root marker.
+
+The scanners prune any directory tree containing this file, so that the toolkit's own
+IOC set and documentation are never reported as indicators when the toolkit happens to
+be cloned inside a server folder being scanned.
+
+Do not add this file to a FiveM resource directory: doing so would hide that directory
+from every scan.

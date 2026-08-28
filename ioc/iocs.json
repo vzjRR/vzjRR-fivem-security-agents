@@ -1,0 +1,211 @@
+{
+  "schema": "vzjrr-fivem-ioc/2",
+  "version": "2.0.0",
+  "updated_utc": "2026-08-28",
+  "credit": "vzjRR Security Assessment for FiveM",
+  "note": "Machine-readable IOC set consumed by tools/. Defensive detection only. Never resolve, fetch, or connect to any indicator listed here.",
+
+  "families": [
+    {
+      "id": "blum-panel",
+      "name": "Blum Panel (FiveM extortion / server-lock backdoor)",
+      "aliases": ["blum", "blum-panel.me", "BLUM_TXADMIN_THEFT_PAYLOAD"],
+      "behaviour": [
+        "Injects a hidden server_script into fxmanifest.lua using long whitespace padding so the line scrolls off-screen in editors.",
+        "Loader steals txAdmin data: txData/admins.json, txData/<profile>/config.json, server.cfg, sv_licenseKey, DB credentials, Discord tokens.",
+        "Exfiltrates via Discord webhook or HTTPS POST to a *-panel.me endpoint.",
+        "Registers a playerConnecting / deferrals handler that rejects every connecting player with an extortion message naming the panel domain.",
+        "Re-establishes access using stolen txAdmin admin credentials, stolen license key, or an admin entry it appended to admins.json - so file cleanup alone does NOT evict it."
+      ],
+      "lock_message_fragments": [
+        "Server is locked by",
+        "Connections to server is restricted",
+        "Purchase whitelist to stop",
+        "purchase ULTIMA plan",
+        "to nuke any other servers on fivem"
+      ]
+    },
+    {
+      "id": "kercher-panel",
+      "name": "Kercher Panel",
+      "aliases": ["kercher", "api.kercher-panel.me"],
+      "behaviour": ["Same manifest-padding + txAdmin theft pattern as Blum; shared or forked codebase."]
+    },
+    {
+      "id": "generic-panel-loader",
+      "name": "Generic *-panel FiveM loader",
+      "aliases": ["warden", "cipher", "panel-loader"],
+      "behaviour": ["Any resource that fetches remote code at runtime and executes it via load/loadstring/eval."]
+    }
+  ],
+
+  "network_indicators": {
+    "description": "DETECTION ONLY. Do not resolve or contact. Match as substrings, case-insensitive.",
+    "domains_exact": [
+      "blum-panel.me",
+      "api.blum-panel.me",
+      "cdn.blum-panel.me",
+      "kercher-panel.me",
+      "api.kercher-panel.me",
+      "warden-panel.me",
+      "cipher-panel.me"
+    ],
+    "domain_patterns": [
+      "[a-z0-9_-]{2,30}-panel\\.(me|xyz|cc|su|ru|top|store|shop|online|site|pro|fun|lol|gg)",
+      "[a-z0-9_-]{2,30}panel\\.(me|xyz|su|top)"
+    ],
+    "exfil_patterns": [
+      "discord(app)?\\.com/api/webhooks/",
+      "discord\\.com/api/v[0-9]+/webhooks/",
+      "canary\\.discord\\.com/api/webhooks/"
+    ],
+    "payload_host_patterns": [
+      "pastebin\\.com/raw",
+      "hastebin\\.(com|skyra\\.pw)/raw",
+      "paste\\.ee/r/",
+      "raw\\.githubusercontent\\.com/[^\"'\\s]+\\.(lua|js|mjs|txt)",
+      "cdn\\.discordapp\\.com/attachments/[^\"'\\s]+\\.(lua|js|mjs|zip|txt)",
+      "transfer\\.sh/",
+      "anonfiles\\.com/",
+      "gofile\\.io/",
+      "file\\.io/",
+      "ngrok(-free)?\\.(io|app|dev)",
+      "trycloudflare\\.com"
+    ],
+    "ip_literal_endpoint": "https?://(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])(\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])){3}(:[0-9]{1,5})?",
+    "incident_context_ips": {
+      "note": "Populate during an engagement with IPs seen in your own logs. Never pre-trust or pre-block without evidence.",
+      "values": []
+    }
+  },
+
+  "code_signatures": [
+    {"id": "SIG-BLUM-001", "severity": "critical", "pattern": "BLUM_TXADMIN_THEFT_PAYLOAD", "why": "Literal Blum payload marker."},
+    {"id": "SIG-BLUM-002", "severity": "critical", "pattern": "helpEmptyCode", "why": "Known loader function name in the Blum/Kercher family."},
+    {"id": "SIG-BLUM-003", "severity": "critical", "pattern": "onServerResourceFail", "why": "Loader hook used to survive resource start failures."},
+    {"id": "SIG-BLUM-004", "severity": "critical", "pattern": "RESOURCE_EXCLUDE", "why": "Loader self-exclusion list."},
+    {"id": "SIG-BLUM-005", "severity": "critical", "pattern": "JohnsUrUncle", "why": "Known family string."},
+    {"id": "SIG-BLUM-006", "severity": "critical", "pattern": "txadmin:js_create", "why": "txAdmin event abused to write files to disk."},
+    {"id": "SIG-LOCK-001", "severity": "critical", "pattern": "Server is locked by", "why": "Extortion lock message shown to connecting players."},
+    {"id": "SIG-LOCK-002", "severity": "critical", "pattern": "Purchase whitelist", "why": "Extortion lock message fragment."},
+    {"id": "SIG-LOCK-003", "severity": "high", "pattern": "Connections? to server is restricted", "why": "Extortion lock message fragment."},
+
+    {"id": "SIG-LUA-001", "severity": "critical", "pattern": "PerformHttpRequest[\\s\\S]{0,400}?(load|loadstring|assert\\s*\\(\\s*load)\\s*\\(", "why": "Downloads remote content then executes it - remote code execution loader."},
+    {"id": "SIG-LUA-002", "severity": "high", "pattern": "loadstring\\s*\\(", "why": "Dynamic Lua execution; rare in legitimate FiveM resources."},
+    {"id": "SIG-LUA-003", "severity": "high", "pattern": "\\bload\\s*\\(\\s*(Base64|base64|Decode|decode|table\\.concat|string\\.char)", "why": "Executes decoded/obfuscated data."},
+    {"id": "SIG-LUA-004", "severity": "high", "pattern": "(os\\.execute|io\\.popen)\\s*\\(", "why": "Shell execution from server Lua - almost never legitimate."},
+    {"id": "SIG-LUA-005", "severity": "medium", "pattern": "string\\.char\\s*\\(\\s*[0-9]{2,3}\\s*(,\\s*[0-9]{2,3}\\s*){10,}\\)", "why": "Char-code string obfuscation."},
+    {"id": "SIG-LUA-006", "severity": "high", "pattern": "\\\\27(Lua|\\\\76\\\\117\\\\97)", "why": "Precompiled Lua bytecode embedded in a source file."},
+    {"id": "SIG-LUA-007", "severity": "medium", "pattern": "\\b(IIlIll|lIlIlI|Il1I1l|_0x[a-f0-9]{4,6})\\b", "why": "Obfuscator-generated identifiers."},
+
+    {"id": "SIG-JS-001", "severity": "critical", "pattern": "eval\\s*\\([\\s\\S]{0,200}?Buffer\\.from\\s*\\([^)]*base64", "why": "Executes base64-decoded code."},
+    {"id": "SIG-JS-002", "severity": "critical", "pattern": "(new\\s+Function|eval)\\s*\\([\\s\\S]{0,200}?(fetch|https?\\.get|axios|request)\\s*\\(", "why": "Executes remotely fetched code."},
+    {"id": "SIG-JS-003", "severity": "high", "pattern": "require\\s*\\(\\s*['\"]child_process['\"]\\s*\\)", "why": "Spawns OS processes from a FiveM server script."},
+    {"id": "SIG-JS-004", "severity": "high", "pattern": "atob\\s*\\(|Buffer\\.from\\s*\\([^)]{20,},\\s*['\"]base64['\"]\\)", "why": "Base64 decoding of embedded blobs."},
+    {"id": "SIG-JS-005", "severity": "medium", "pattern": "String\\.fromCharCode\\s*\\(\\s*[0-9]{2,3}\\s*(,\\s*[0-9]{2,3}\\s*){10,}", "why": "Char-code string obfuscation."},
+    {"id": "SIG-JS-006", "severity": "high", "pattern": "process\\.(env|mainModule|binding)\\s*[\\.\\[]", "why": "Node internals access from resource code - used to reach host secrets."},
+
+    {"id": "SIG-THEFT-001", "severity": "critical", "pattern": "admins\\.json", "why": "Resource code touching txAdmin's admin credential store."},
+    {"id": "SIG-THEFT-002", "severity": "critical", "pattern": "sv_licenseKey|svLicenseKey", "why": "Resource code reading the Cfx.re license key."},
+    {"id": "SIG-THEFT-003", "severity": "high", "pattern": "GetConvar\\s*\\(\\s*['\"](rcon_password|sv_licenseKey|mysql_connection_string|steam_webApiKey)", "why": "Resource code harvesting server secrets."},
+    {"id": "SIG-THEFT-004", "severity": "high", "pattern": "txData|txAdmin[\\\\/]+data", "why": "Resource code reading the txAdmin data directory."},
+    {"id": "SIG-THEFT-005", "severity": "high", "pattern": "(mysql_connection_string|set_?mysql|connectionString)[\\s\\S]{0,80}(password|pwd)\\s*=", "why": "Database credential harvesting."},
+    {"id": "SIG-THEFT-006", "severity": "high", "pattern": "server\\.cfg", "why": "Resource code reading the server configuration (contains secrets)."},
+
+    {"id": "SIG-BACKDOOR-001", "severity": "critical", "pattern": "ExecuteCommand\\s*\\(\\s*(['\"]?\\s*\\.\\.|[a-zA-Z_])", "why": "Executes server console commands from a dynamic value - a console backdoor."},
+    {"id": "SIG-BACKDOOR-002", "severity": "high", "pattern": "RegisterNetEvent[\\s\\S]{0,200}?(ExecuteCommand|load|loadstring|os\\.execute)", "why": "Client-triggerable server-side command execution."},
+    {"id": "SIG-BACKDOOR-003", "severity": "high", "pattern": "add_principal\\s+identifier\\.|add_ace\\s+identifier\\.", "why": "Grants server ACE permissions to a specific identity - verify every one of these."},
+    {"id": "SIG-BACKDOOR-004", "severity": "medium", "pattern": "TriggerClientEvent\\s*\\(\\s*['\"]chat:addMessage", "why": "Low signal alone; correlate with lock/extortion strings."},
+    {"id": "SIG-BACKDOOR-005", "severity": "high", "pattern": "deferrals\\.(done|update)\\s*\\([\\s\\S]{0,200}(locked|restricted|purchase|whitelist|panel)", "why": "Connection deferral used to display an extortion lock message."}
+  ],
+
+  "manifest_indicators": [
+    {"id": "MAN-001", "severity": "critical", "check": "padded_line", "min_whitespace_run": 60, "why": "A run of 60+ spaces/tabs before a directive hides the line beyond the editor viewport. This is the signature Blum manifest injection."},
+    {"id": "MAN-002", "severity": "high", "check": "js_in_lua_resource", "why": "server_script(s) pointing at .js/.mjs inside a resource that is otherwise pure Lua."},
+    {"id": "MAN-003", "severity": "critical", "check": "referenced_names", "names": ["sv_init.mjs", "sv_init.js", ".babelrc.js", "babel_config.js", "babel.config.js", "crypto.js", ".yarn.js", "webpack.config.js", "node_modules/internal", "internal/index.js", "sv_core.js", "sv_lib.js", "init.mjs"], "why": "Fake tooling filenames used as loader drop points inside FiveM resources."},
+    {"id": "MAN-004", "severity": "medium", "check": "duplicate_lines", "min_repeats": 5, "why": "mysql-async / lib spam blocks used to push the injected line out of view."},
+    {"id": "MAN-005", "severity": "high", "check": "trailing_content_after_blank_block", "min_blank_lines": 20, "why": "Large blank gap followed by content - visual hiding."},
+    {"id": "MAN-006", "severity": "high", "check": "missing_referenced_file", "why": "Manifest references a script that no longer exists: an incomplete cleanup, or the loader deleted itself after running."}
+  ],
+
+  "suspicious_filenames": {
+    "critical": ["sv_init.mjs", "sv_init.js", "BLUM.js", "blum.js", "kercher.js", "panel.js", "loader.mjs", "auth.mjs"],
+    "high": [".babelrc.js", "babel_config.js", "crypto.js", ".yarn.js", "sv_core.js", "sv_lib.js", "internal.js", "index.mjs"],
+    "suspicious_dirs": ["node_modules/internal", ".vscode/server", "resources/[system]/.cache", "__pycache__"],
+    "note": "Filename alone is not proof. Correlate with code_signatures and with whether the file is referenced by a padded manifest line."
+  },
+
+  "txadmin_indicators": [
+    {"id": "TXA-001", "severity": "critical", "check": "unknown_admin_in_admins_json", "why": "An admin account you do not recognise in txData/admins.json is standing access for the attacker. Cleaning resource files does not remove it."},
+    {"id": "TXA-002", "severity": "critical", "check": "extra_master_admin", "why": "More than one master admin, or a master you did not create."},
+    {"id": "TXA-003", "severity": "high", "check": "admins_json_mtime_after_incident", "why": "admins.json modified around the intrusion window."},
+    {"id": "TXA-004", "severity": "high", "check": "txadmin_core_file_modified", "why": "Files inside the txAdmin bundle with modification times differing from the artifact install."},
+    {"id": "TXA-005", "severity": "high", "check": "unexpected_discord_bot_token", "why": "Attacker-controlled Discord bot/webhook configured in txAdmin for persistence and exfil."},
+    {"id": "TXA-006", "severity": "high", "check": "txadmin_web_exposed", "why": "txAdmin web port (default 40120) reachable from the internet without an allowlist."},
+    {"id": "TXA-007", "severity": "critical", "check": "provider_auth_or_pin_reuse", "why": "A live txAdmin PIN, or Cfx.re provider auth the attacker can reuse to log straight back in."}
+  ],
+
+  "servercfg_indicators": [
+    {"id": "CFG-001", "severity": "critical", "check": "unknown_exec", "why": "exec of a cfg file you did not author - the classic re-entry hook."},
+    {"id": "CFG-002", "severity": "critical", "check": "add_principal_unknown", "why": "add_principal / add_ace granting group.admin or command rights to an unknown identifier."},
+    {"id": "CFG-003", "severity": "high", "check": "unknown_ensure", "why": "ensure/start of a resource that is not in your inventory."},
+    {"id": "CFG-004", "severity": "high", "check": "weak_or_default_rcon", "why": "Empty, default, or reused rcon_password gives full console control."},
+    {"id": "CFG-005", "severity": "medium", "check": "sv_master_or_endpoint_modified", "why": "Altered master list / endpoint settings."},
+    {"id": "CFG-006", "severity": "high", "check": "secrets_in_plaintext", "why": "License key, DB password, Discord and Steam API tokens sitting in a file the attacker already read."}
+  ],
+
+  "host_persistence_indicators": {
+    "windows": [
+      {"id": "WIN-001", "severity": "critical", "check": "defender_exclusions", "why": "Attacker-added Defender exclusion paths - a near-certain compromise tell on a game server."},
+      {"id": "WIN-002", "severity": "critical", "check": "scheduled_tasks", "patterns": ["powershell[\\s\\S]{0,80}-enc", "-w\\s+hidden", "-WindowStyle\\s+Hidden", "mshta", "certutil[\\s\\S]{0,40}-urlcache", "bitsadmin", "curl[\\s\\S]{0,40}http", "Invoke-(WebRequest|Expression)", "iex\\s*\\(", "wscript|cscript"], "why": "Scheduled task that re-downloads or re-launches the payload after cleanup."},
+      {"id": "WIN-003", "severity": "critical", "check": "run_keys", "keys": ["HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "HKLM:\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce", "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\Run", "HKCU:\\Software\\Microsoft\\Windows\\CurrentVersion\\RunOnce", "HKLM:\\Software\\Wow6432Node\\Microsoft\\Windows\\CurrentVersion\\Run"], "why": "Autorun persistence."},
+      {"id": "WIN-004", "severity": "high", "check": "services_suspicious_path", "path_patterns": ["\\\\Temp\\\\", "\\\\AppData\\\\", "\\\\ProgramData\\\\", "\\\\Users\\\\Public\\\\", "\\\\Downloads\\\\"], "why": "Service binary in a user-writable directory."},
+      {"id": "WIN-005", "severity": "high", "check": "wmi_event_subscription", "why": "WMI permanent event subscription - survives reboots and file cleanup, and is missed by most cleanups."},
+      {"id": "WIN-006", "severity": "critical", "check": "local_accounts_and_admins", "why": "Attacker-created local account or an existing account added to Administrators. This alone re-opens the server after any file cleanup."},
+      {"id": "WIN-007", "severity": "high", "check": "remote_access_tools", "names": ["anydesk", "rustdesk", "teamviewer", "ngrok", "frpc", "frps", "chrome remote desktop", "supremo", "atera", "screenconnect", "netsupport"], "why": "Silent remote-access tooling installed for re-entry."},
+      {"id": "WIN-008", "severity": "high", "check": "startup_folders", "why": "Startup folder persistence."},
+      {"id": "WIN-009", "severity": "high", "check": "firewall_rules_added", "why": "Inbound allow rules the attacker added for their own access."},
+      {"id": "WIN-010", "severity": "medium", "check": "hosts_file_entries", "why": "Redirected update/telemetry hosts."},
+      {"id": "WIN-011", "severity": "high", "check": "rdp_exposure", "why": "RDP reachable from the internet is the most common initial access route for FiveM VPS compromise."},
+      {"id": "WIN-012", "severity": "high", "check": "listening_ports_and_connections", "why": "Unexpected listeners or outbound sessions to unfamiliar infrastructure."}
+    ],
+    "linux": [
+      {"id": "LIN-001", "severity": "critical", "check": "authorized_keys", "why": "Attacker SSH key = permanent access that no file cleanup removes."},
+      {"id": "LIN-002", "severity": "critical", "check": "cron_and_systemd_timers", "why": "Scheduled re-download of the payload."},
+      {"id": "LIN-003", "severity": "high", "check": "systemd_units_nonstandard", "why": "Service persistence."},
+      {"id": "LIN-004", "severity": "high", "check": "shell_rc_files", "files": ["~/.bashrc", "~/.bash_profile", "~/.profile", "/etc/profile.d"], "why": "Login-triggered persistence."},
+      {"id": "LIN-005", "severity": "critical", "check": "users_uid0_and_sudoers", "why": "Extra privileged accounts."},
+      {"id": "LIN-006", "severity": "high", "check": "suid_and_recent_bin_changes", "why": "Privilege-escalation backdoors and replaced binaries."},
+      {"id": "LIN-007", "severity": "high", "check": "listening_ports_and_connections", "why": "Unexpected listeners or outbound sessions."}
+    ]
+  },
+
+  "database_indicators": [
+    {"id": "DB-001", "severity": "critical", "check": "unknown_mysql_users", "why": "Attacker-created DB account."},
+    {"id": "DB-002", "severity": "critical", "check": "wildcard_host_grants", "why": "Accounts granted from '%' allow remote DB login from anywhere."},
+    {"id": "DB-003", "severity": "high", "check": "admin_flags_on_unknown_identifiers", "why": "Attacker granted themselves in-game admin via the framework's users/players table."},
+    {"id": "DB-004", "severity": "medium", "check": "code_stored_in_db", "why": "Some loaders stage Lua/JS inside a table and execute it at runtime."}
+  ],
+
+  "reinfection_vectors": [
+    {"id": "RV-01", "vector": "txAdmin admin account left in place", "closes_with": "Remove unknown admins, rotate every remaining admin password, revoke sessions, regenerate the master account."},
+    {"id": "RV-02", "vector": "Cfx.re license key stolen", "closes_with": "Revoke and regenerate the key in Keymaster; the old key is attacker-usable until you do."},
+    {"id": "RV-03", "vector": "Cfx.re / Keymaster account itself compromised", "closes_with": "Rotate that password, enable 2FA, review authorised sessions and server registrations."},
+    {"id": "RV-04", "vector": "RDP or SSH credentials", "closes_with": "Rotate all host credentials, remove unknown accounts and keys, restrict management ports to an allowlist or VPN."},
+    {"id": "RV-05", "vector": "rcon_password", "closes_with": "Rotate; never reuse; do not expose rcon to the internet."},
+    {"id": "RV-06", "vector": "Database credentials", "closes_with": "Rotate the DB password, drop unknown accounts, remove wildcard-host grants, bind MySQL to localhost."},
+    {"id": "RV-07", "vector": "Discord bot token / webhooks", "closes_with": "Regenerate the bot token, delete every webhook the attacker could have read."},
+    {"id": "RV-08", "vector": "Host-level persistence (task/service/registry/WMI/cron/SSH key)", "closes_with": "The host audit in tools/ - and if any is found, treat the host as fully compromised and rebuild."},
+    {"id": "RV-09", "vector": "The same cracked or leaked resource re-uploaded", "closes_with": "Identify patient zero, purge it, and stop deploying leaked assets - this is the single most common initial infection route."},
+    {"id": "RV-10", "vector": "Restoring an infected backup", "closes_with": "Scan every backup before restore; date-bound your known-good backup to before first compromise."},
+    {"id": "RV-11", "vector": "A second admin's compromised workstation", "closes_with": "Every person with server access rotates their own credentials and scans their machine."},
+    {"id": "RV-12", "vector": "Cleanup performed while the server was still running", "closes_with": "Stop FXServer and txAdmin before cleaning; a live loader rewrites files behind you."}
+  ],
+
+  "false_positive_guidance": {
+    "note": "These reduce noise. They NEVER clear a finding on their own - a file in an allowlisted location that also matches a critical code signature is still a finding.",
+    "lower_priority_paths": ["/html/", "/ui/", "/web/", "/nui/", "/client/", "/stream/", "/locales/", "/languages/"],
+    "known_good_js_contexts": ["NUI interface scripts under html/ or ui/", "bundled vendor libraries (jquery, vue, react) inside html/", "oxmysql, screenshot-basic and other well-known JS resources from their official repositories"],
+    "verification_rule": "Before deleting any JS file, confirm it is NOT the resource's intended NUI script and IS referenced by an injected/padded manifest line or matches a critical signature."
+  }
+}
